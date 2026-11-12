@@ -1,0 +1,50 @@
+
+{
+  "header_row": 4,
+  "data_start_row": 5,
+  "sheets": {
+    "sop": "SOP_Dump",
+    "vendors": "Vendor_Master",
+    "projects": "Project_Master",
+    "budget": "CAPEX_Budget",
+    "invoice_receipt": "Invoice_Receipt",
+    "output_template": "CAPEX_Output_Template"
+  },
+  "keys": {
+    "vendor": ["Vendor_ID"],
+    "project": ["Project_Code"],
+    "budget": ["Project_Code", "Financial_Year"],
+    "po_line": ["PO_Number", "PO_Line_No"],
+    "invoice_to_po_line": ["PO_Number", "PO_Line_No"]
+  },
+  "merchant_search": {
+    "primary_field": "Vendor_ID",
+    "display_field": "Merchant_Name",
+    "name_normalization": [
+      "trim",
+      "collapse_whitespace",
+      "casefold"
+    ],
+    "fuzzy_match_auto_select": false
+  },
+  "output_mapping": {
+    "Merchant_Name": "Merchant_Name",
+    "Vendor_ID": "Vendor_ID",
+    "PO_Number": "PO_Number",
+    "PO_Line_No": "PO_Line_No",
+    "PO_Date": "PO_Date",
+    "Project_Code": "Project_Code",
+    "Project_Name": "Project_Name",
+    "Department": "Department",
+    "Asset_or_Description": "Item_Description",
+    "Spend_Category": "Spend_Category",
+    "Quantity": "Quantity",
+    "PO_Line_Value_INR": "PO_Line_Total_INR",
+    "Approval_Status": "Approval_Status",
+    "Receipt_Status": "Receipt_Status",
+    "Invoice_Amount_INR": "Invoice_Amount_INR",
+    "Financial_Year": "Financial_Year",
+    "Review_Flag": "Review_Flag",
+    "Reviewer_Notes": null
+  }
+}

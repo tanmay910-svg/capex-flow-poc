@@ -1,0 +1,124 @@
+
+{
+  "required_sop_columns": [
+    "PO_Number",
+    "PO_Line_No",
+    "PO_Date",
+    "Vendor_ID",
+    "Merchant_Name",
+    "Project_Code",
+    "Project_Name",
+    "Department",
+    "Item_Description",
+    "Spend_Category",
+    "Quantity",
+    "Unit_Price_INR",
+    "Discount_INR",
+    "Tax_Amount_INR",
+    "PO_Line_Total_INR",
+    "Approval_Status",
+    "Receipt_Status",
+    "Financial_Year",
+    "Currency"
+  ],
+  "required_vendor_columns": [
+    "Vendor_ID",
+    "Merchant_Name",
+    "Category",
+    "Country",
+    "Status"
+  ],
+  "required_project_columns": [
+    "Project_Code",
+    "Project_Name",
+    "Department",
+    "Cost_Centre",
+    "Financial_Year",
+    "Project_Status"
+  ],
+  "required_budget_columns": [
+    "Project_Code",
+    "Project_Name",
+    "Department",
+    "Financial_Year",
+    "Approved_Budget_INR",
+    "Revised_Budget_Adjustment_INR"
+  ],
+  "required_invoice_columns": [
+    "Invoice_Number",
+    "PO_Number",
+    "PO_Line_No",
+    "Vendor_ID",
+    "Merchant_Name",
+    "Invoice_Date",
+    "Invoice_Amount_INR",
+    "Received_Quantity",
+    "Match_Status"
+  ],
+  "unique_keys": {
+    "Vendor_Master": ["Vendor_ID"],
+    "Project_Master": ["Project_Code"],
+    "CAPEX_Budget": ["Project_Code", "Financial_Year"],
+    "SOP_Dump": ["PO_Number", "PO_Line_No"],
+    "Invoice_Receipt": ["Vendor_ID", "Invoice_Number"]
+  },
+  "foreign_keys": [
+    {
+      "from_sheet": "SOP_Dump",
+      "from_columns": ["Vendor_ID"],
+      "to_sheet": "Vendor_Master",
+      "to_columns": ["Vendor_ID"]
+    },
+    {
+      "from_sheet": "SOP_Dump",
+      "from_columns": ["Project_Code"],
+      "to_sheet": "Project_Master",
+      "to_columns": ["Project_Code"]
+    },
+    {
+      "from_sheet": "SOP_Dump",
+      "from_columns": ["Project_Code", "Financial_Year"],
+      "to_sheet": "CAPEX_Budget",
+      "to_columns": ["Project_Code", "Financial_Year"]
+    },
+    {
+      "from_sheet": "Invoice_Receipt",
+      "from_columns": ["PO_Number", "PO_Line_No"],
+      "to_sheet": "SOP_Dump",
+      "to_columns": ["PO_Number", "PO_Line_No"]
+    }
+  ],
+  "consistency_checks": [
+    {
+      "name": "invoice_vendor_consistency",
+      "source_sheet": "Invoice_Receipt",
+      "reference_sheet": "SOP_Dump",
+      "matching_columns": ["PO_Number", "PO_Line_No"],
+      "compare_columns": ["Vendor_ID"],
+      "severity": "ERROR"
+    },
+    {
+      "name": "invoice_merchant_consistency",
+      "source_sheet": "Invoice_Receipt",
+      "reference_sheet": "SOP_Dump",
+      "matching_columns": ["PO_Number", "PO_Line_No"],
+      "compare_columns": ["Merchant_Name"],
+      "severity": "ERROR"
+    }
+  ],
+  "numeric_non_negative": [
+    "Quantity",
+    "Unit_Price_INR",
+    "Discount_INR",
+    "Tax_Amount_INR",
+    "PO_Line_Total_INR",
+    "Invoice_Amount_INR",
+    "Received_Quantity"
+  ],
+  "financial_checks": {
+    "po_line_total_formula": "Quantity * Unit_Price_INR - Discount_INR + Tax_Amount_INR",
+    "allow_invoice_exceeding_po": false,
+    "allow_negative_budget_balance": false
+  },
+  "important_note": "Validation flags data-quality issues; it does not decide CAPEX eligibility or accounting treatment."
+}
