@@ -1228,7 +1228,7 @@ if (
 st.divider()
 
 section_heading(
-    "09",
+    "10",
     "Audit History",
     "Operational events recorded by the local demonstration application.",
 )
