@@ -118,7 +118,8 @@ def create_finance_template(template_path=DEFAULT_TEMPLATE):
     workbook.save(template_path)
     return template_path
 
-\ndef _excel_value(value):
+
+def _excel_value(value):
     if value is None:
         return None
     if pd.api.types.is_scalar(value) and pd.isna(value):
@@ -174,7 +175,7 @@ def generate_finance_register_excel(
     template_path = Path(template_path)
     output_dir = Path(output_dir)
     if not template_path.exists():
-        raise FileNotFoundError(f"Finance register template not found: {template_path}")
+        create_finance_template(template_path)
     workbook = load_workbook(template_path)
     required_sheets = ["CAPEX Register", "Project Summary", "Reconciliation", "Read Me & Assumptions"]
     missing_sheets = [sheet for sheet in required_sheets if sheet not in workbook.sheetnames]
