@@ -11,6 +11,8 @@ from src.merchant_matcher import search_merchant
 from src.capex_processor import process_merchant_capex
 from src.excel_generator import generate_capex_excel
 from src.audit_logger import log_audit_event
+from src.finance_register import build_finance_register
+from src.finance_excel_generator import generate_finance_register_excel
 
 
 # ============================================================
@@ -365,6 +367,9 @@ def clear_processing_state():
         "processed_context",
         "excel_bytes",
         "excel_filename",
+        "finance_result",
+        "finance_excel_bytes",
+        "finance_excel_filename",
     ]
 
     for key in keys:
@@ -1071,7 +1076,153 @@ if (
 
 
 # ============================================================
-# 9. AUDIT HISTORY
+# 9. PHASE 2 — FINANCE REGISTER & RECONCILIATION
+# ============================================================
+
+if (
+    workbook_data is not None
+    and validation_result is not None
+    and validation_result["status"] == "PASSED"
+    and st.session_state.get("processed_context")
+        == (workbook_context, st.session_state.get("merchant_search_input", "").strip().casefold())
+    and "processing_result" in st.session_state
+):
+    st.divider()
+    section_heading(
+        "09",
+        "Finance Register & Reconciliation",
+        "Generate a multi-tab finance review workbook with project budgets, commitments and invoice checks.",
+    )
+
+    st.caption(
+        "This is a generic synthetic POC report. Approved-commitment logic is an illustrative assumption; "
+        "it does not determine capitalization, paid expenditure or accounting treatment."
+    )
+
+    if st.button(
+        "Build Finance Register",
+        type="primary",
+        use_container_width=True,
+        key="build_finance_register",
+    ):
+        try:
+            current_merchant = search_merchant(
+                workbook_data,
+                st.session_state.get("merchant_search_input", "").strip(),
+            )
+            with st.spinner("Building project-level commitments and reconciliation..."):
+                finance_result = build_finance_register(
+                    workbook_data,
+                    current_merchant,
+                )
+            st.session_state["finance_result"] = finance_result
+            st.session_state.pop("finance_excel_bytes", None)
+            st.session_state.pop("finance_excel_filename", None)
+            write_audit_event(
+                event_type="FINANCE_REGISTER_BUILD",
+                merchant_name=finance_result["summary"]["merchant_name"],
+                vendor_id=finance_result["summary"]["vendor_id"],
+                record_count=finance_result["summary"]["po_lines"],
+                status="SUCCESS",
+            )
+            st.success("Finance register and reconciliation are ready.")
+        except Exception as error:
+            st.session_state.pop("finance_result", None)
+            st.error(f"Finance register build failed: {error}")
+            write_audit_event(
+                event_type="FINANCE_REGISTER_BUILD",
+                status="FAILED",
+                error_type=type(error).__name__,
+            )
+
+    finance_result = st.session_state.get("finance_result")
+
+    if finance_result is not None:
+        finance_summary = finance_result["summary"]
+        st.markdown("#### Finance overview")
+        f1, f2, f3, f4 = st.columns(4)
+        f1.metric("PO Lines", finance_summary["po_lines"])
+        f2.metric("PO Value", format_inr(finance_summary["po_value_inr"]))
+        f3.metric("Invoice Value", format_inr(finance_summary["invoice_value_inr"]))
+        f4.metric("Projects", finance_summary["project_count"])
+
+        f5, f6, f7 = st.columns(3)
+        f5.metric(
+            "Merchant Approved Commitment",
+            format_inr(finance_summary["merchant_approved_commitment_inr"]),
+        )
+        f6.metric("Lines Requiring Review", finance_summary["review_lines"])
+        f7.metric("Project Budget Overruns", finance_summary["project_budget_overruns"])
+
+        tab_register, tab_projects, tab_recon = st.tabs(
+            ["CAPEX Register", "Project Summary", "Reconciliation"]
+        )
+        with tab_register:
+            st.dataframe(
+                finance_result["records"],
+                use_container_width=True,
+                hide_index=True,
+            )
+        with tab_projects:
+            st.dataframe(
+                finance_result["project_summary"],
+                use_container_width=True,
+                hide_index=True,
+            )
+        with tab_recon:
+            st.dataframe(
+                finance_result["reconciliation"],
+                use_container_width=True,
+                hide_index=True,
+            )
+
+        if st.button(
+            "Generate Finance Excel Workbook",
+            type="primary",
+            use_container_width=True,
+            key="generate_finance_excel",
+        ):
+            try:
+                with st.spinner("Generating the four-tab finance workbook..."):
+                    output_path = generate_finance_register_excel(
+                        finance_result=finance_result,
+                        merchant_name=finance_summary["merchant_name"],
+                    )
+                    excel_bytes = output_path.read_bytes()
+                st.session_state["finance_excel_bytes"] = excel_bytes
+                st.session_state["finance_excel_filename"] = output_path.name
+                write_audit_event(
+                    event_type="FINANCE_EXCEL_GENERATION",
+                    merchant_name=finance_summary["merchant_name"],
+                    vendor_id=finance_summary["vendor_id"],
+                    record_count=finance_summary["po_lines"],
+                    status="SUCCESS",
+                    output_filename=output_path.name,
+                )
+                st.success("Finance workbook generated successfully.")
+            except Exception as error:
+                st.error(f"Finance Excel generation failed: {error}")
+                write_audit_event(
+                    event_type="FINANCE_EXCEL_GENERATION",
+                    merchant_name=finance_summary["merchant_name"],
+                    vendor_id=finance_summary["vendor_id"],
+                    status="FAILED",
+                    error_type=type(error).__name__,
+                )
+
+        if st.session_state.get("finance_excel_bytes"):
+            st.download_button(
+                "Download Finance Register Workbook",
+                data=st.session_state["finance_excel_bytes"],
+                file_name=st.session_state["finance_excel_filename"],
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="download_finance_excel",
+            )
+
+
+# ============================================================
+# 10. AUDIT HISTORY
 # ============================================================
 
 st.divider()
@@ -1122,7 +1273,7 @@ with st.expander("View Audit Log"):
 
 
 # ============================================================
-# 10. FOOTER
+# 11. FOOTER
 # ============================================================
 
 st.markdown(
