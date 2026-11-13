@@ -165,7 +165,12 @@ def build_finance_register(data, merchant_result):
         "po_value_inr": round(float(register["PO_Line_Total_INR"].sum()), 2),
         "invoice_value_inr": round(float(register["Invoice_Amount_INR"].sum()), 2),
         "merchant_approved_commitment_inr": round(
-            float(register["Merchant_Approved_Commitment_INR"].drop_duplicates().sum()), 2
+            float(
+                selected.loc[
+                    selected["Approval_Status"].astype("string").str.strip().str.casefold().eq("approved"),
+                    "PO_Line_Total_INR",
+                ].pipe(pd.to_numeric, errors="coerce").sum()
+            ), 2
         ),
         "project_count": int(register["Project_Code"].nunique()),
         "review_lines": int(register["Review_Flag"].ne("DEMO_CHECKS_PASSED").sum()),
