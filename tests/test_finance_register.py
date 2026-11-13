@@ -6,11 +6,11 @@ def sample_data():
     sop = pd.DataFrame([
         {"PO_Number":"PO1","PO_Line_No":1,"Project_Code":"P1","Financial_Year":"FY26",
          "PO_Line_Total_INR":1000,"Approval_Status":"Approved","Receipt_Status":"Received",
-         "Merchant_Name":"North","Vendor_ID":"V1","PO_Date":"2026-01-01","Item_Description":"Laptop",
+         "Merchant_Name":"North","Vendor_ID":"V1","Project_Name":"Project 1","Department":"IT","PO_Date":"2026-01-01","Item_Description":"Laptop",
          "Spend_Category":"IT","Quantity":1},
         {"PO_Number":"PO2","PO_Line_No":1,"Project_Code":"P1","Financial_Year":"FY26",
          "PO_Line_Total_INR":500,"Approval_Status":"Pending","Receipt_Status":"Not Received",
-         "Merchant_Name":"Other","Vendor_ID":"V2","PO_Date":"2026-01-02","Item_Description":"Monitor",
+         "Merchant_Name":"Other","Vendor_ID":"V2","Project_Name":"Project 1","Department":"IT","PO_Date":"2026-01-02","Item_Description":"Monitor",
          "Spend_Category":"IT","Quantity":1},
     ])
     return {
