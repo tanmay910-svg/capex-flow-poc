@@ -4,6 +4,7 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+from openpyxl import Workbook
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TEMPLATE = PROJECT_ROOT / "data" / "templates" / "CAPEX_FLOW_Proposed_Finance_Register_Template.xlsx"
@@ -36,7 +37,88 @@ RECON_COLUMNS = [
 ]
 
 
-def _excel_value(value):
+
+def create_finance_template(template_path=DEFAULT_TEMPLATE):
+    """Create the generic four-tab output template on first use."""
+    template_path = Path(template_path)
+    template_path.parent.mkdir(parents=True, exist_ok=True)
+    if template_path.exists():
+        return template_path
+
+    workbook = Workbook()
+    register = workbook.active
+    register.title = "CAPEX Register"
+    project = workbook.create_sheet("Project Summary")
+    reconciliation = workbook.create_sheet("Reconciliation")
+    readme = workbook.create_sheet("Read Me & Assumptions")
+
+    navy, blue, white = "152238", "315B91", "FFFFFF"
+
+    def setup_sheet(ws, title, subtitle, headers):
+        ws.sheet_view.showGridLines = False
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        ws["A1"] = title
+        ws["A1"].font = Font(size=16, bold=True, color=white)
+        ws["A1"].fill = PatternFill("solid", fgColor=navy)
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+        ws["A2"] = subtitle
+        ws["A2"].font = Font(italic=True, color=navy)
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(4, col, header)
+            cell.font = Font(bold=True, color=white)
+            cell.fill = PatternFill("solid", fgColor=blue)
+            cell.alignment = Alignment(wrap_text=True, vertical="center")
+        ws.row_dimensions[4].height = 42
+        ws.freeze_panes = "A5"
+        ws.auto_filter.ref = f"A4:{get_column_letter(len(headers))}4"
+        for col in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col)].width = 21
+
+    setup_sheet(register, "CAPEX FLOW | CAPEX REGISTER",
+        "One row per selected merchant PO line. Synthetic demonstration output — not an approved company template.",
+        REGISTER_COLUMNS)
+    setup_sheet(project, "CAPEX FLOW | PROJECT SUMMARY",
+        "Project-level budgets and project-wide approved commitments across all vendors.",
+        PROJECT_COLUMNS)
+    setup_sheet(reconciliation, "CAPEX FLOW | RECONCILIATION",
+        "Invoice and budget exceptions for human review; not accounting approvals.",
+        RECON_COLUMNS)
+
+    readme.sheet_view.showGridLines = False
+    readme.column_dimensions["A"].width = 34
+    readme.column_dimensions["B"].width = 105
+    readme.merge_cells("A1:B1")
+    readme["A1"] = "CAPEX FLOW | READ ME & ASSUMPTIONS"
+    readme["A1"].font = Font(size=16, bold=True, color=white)
+    readme["A1"].fill = PatternFill("solid", fgColor=navy)
+    readme.merge_cells("A2:B2")
+    readme["A2"] = "Synthetic proof-of-concept. Review definitions before interpreting figures."
+    readme["A2"].font = Font(italic=True, color=navy)
+    for col, value in enumerate(["Measure / Rule", "Definition and limitation"], 1):
+        cell = readme.cell(4, col, value)
+        cell.font = Font(bold=True, color=white)
+        cell.fill = PatternFill("solid", fgColor=blue)
+    notes = [
+        ("PO value", "Purchase-order line amount sourced from SOP_Dump."),
+        ("Invoice value", "Sum of invoice records linked to the PO line; not necessarily paid expenditure."),
+        ("Uninvoiced PO value", "max(PO value - invoice value, 0); an exposure indicator only."),
+        ("Approved commitment", "This POC assumes Approval_Status = Approved. Finance must confirm production policy."),
+        ("Project commitments", "Approved PO value across all vendors in the SOP Dump for the same project and financial year."),
+        ("Remaining budget", "Revised budget less project-wide approved commitments."),
+        ("Receipt", "Receipt status/quantity does not prove payment or capitalization."),
+        ("Capitalization", "No asset recognition, capitalization, useful life, depreciation, tax or journal-entry decision is made."),
+        ("Review flags", "Flags identify records requiring human review. No flag is not Finance approval."),
+        ("Template status", "Generic POC template only; not the employer's CAPEX template."),
+    ]
+    for row, (label, definition) in enumerate(notes, 5):
+        readme.cell(row, 1, label)
+        readme.cell(row, 2, definition)
+        readme.cell(row, 1).alignment = Alignment(wrap_text=True, vertical="top")
+        readme.cell(row, 2).alignment = Alignment(wrap_text=True, vertical="top")
+    workbook.save(template_path)
+    return template_path
+
+\ndef _excel_value(value):
     if value is None:
         return None
     if pd.api.types.is_scalar(value) and pd.isna(value):
