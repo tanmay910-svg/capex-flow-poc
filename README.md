@@ -20,3 +20,15 @@ PO value, invoice value, receipt quantity, paid expenditure, approved commitment
 
 ## Safety
 Do not upload company data or connect company systems until the employer's IT and data owners explicitly approve the environment, data flow, security controls and deployment model.
+
+
+## Phase 2 — Finance Register & Reconciliation
+
+The `phase-2-finance-register` branch adds a finance review workflow to the Streamlit dashboard. After the existing merchant CAPEX processing, select **Build Finance Register** to view:
+- CAPEX Register with PO, invoice, receipt and budget context.
+- Project Summary with project-wide approved commitments and remaining budget.
+- Reconciliation with PO/invoice variance and budget checks.
+
+Use **Generate Finance Excel Workbook** to download a four-tab workbook. The generic template is created automatically on first use under `data/templates/`.
+
+All figures and records in the public demo are synthetic. Approved commitment is an illustrative assumption, not a confirmed company accounting rule. The app does not decide capitalization eligibility, payment, depreciation or journal entries. Do not upload company information without explicit IT and data-owner approval.
